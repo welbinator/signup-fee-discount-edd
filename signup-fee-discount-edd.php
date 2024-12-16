@@ -184,6 +184,90 @@ function apply_signup_fee_discount( $discounted_amount, $discounts = array(), $c
 }
 add_filter( 'edd_get_cart_discounted_amount', __NAMESPACE__ . '\\apply_signup_fee_discount', 10, 3 );
 
+/**
+ * Customize the display of discounts to include signup fee discounts.
+ *
+ * @param string $html         The existing discounts HTML.
+ * @param array  $discounts    The discounts applied to the cart.
+ * @param string $rate         The discount rate.
+ * @param string $remove_url   The URL to remove the discount.
+ *
+ * @return string The updated discounts HTML.
+ */
+add_filter( 'edd_get_cart_discounts_html', function( $html, $discounts, $rate, $remove_url ) {
+    error_log( 'edd_get_cart_discounts_html: Filter triggered.' );
+    $updated_html = _n( 'Discount', 'Discounts', count( $discounts ), 'easy-digital-downloads' ) . ':&nbsp;';
+
+    foreach ( $discounts as $discount ) {
+        $discount_id     = edd_get_discount_id_by_code( $discount );
+        $total_discount  = 0;
+        $cart_items      = edd_get_cart_contents();
+
+        error_log( 'Processing discount code: ' . $discount );
+        error_log( 'Cart items: ' . print_r( $cart_items, true ) );
+
+        if ( is_array( $cart_items ) && ! empty( $cart_items ) ) {
+            foreach ( $cart_items as $item ) {
+                $item_price = edd_get_cart_item_price( $item ); // Fetch item price
+
+                // Recurring discount.
+                if ( $item_price > 0 ) {
+                    $recurring_discount = edd_get_discount_type( $discount_id ) === 'percent'
+                        ? $item_price * ( edd_get_discount_amount( $discount_id ) / 100 )
+                        : edd_get_discount_amount( $discount_id );
+
+                    $recurring_discount = min( $recurring_discount, $item_price );
+                    $total_discount += $recurring_discount;
+
+                    error_log( "Item Price: {$item_price}, Recurring Discount: {$recurring_discount}" );
+                }
+
+                // Signup fee discount.
+                if ( isset( $item['options']['recurring']['signup_fee'] ) ) {
+                    $signup_fee = floatval( $item['options']['recurring']['signup_fee'] );
+                    $apply_to_fee = get_post_meta( $discount_id, '_apply_to_signup_fee', true );
+
+                    error_log( "Signup Fee: {$signup_fee}, Applies to Fee: {$apply_to_fee}" );
+
+                    if ( '1' === $apply_to_fee ) {
+                        $fee_discount = edd_get_discount_type( $discount_id ) === 'percent'
+                            ? $signup_fee * ( edd_get_discount_amount( $discount_id ) / 100 )
+                            : edd_get_discount_amount( $discount_id );
+
+                        $fee_discount = min( $fee_discount, $signup_fee );
+                        $total_discount += $fee_discount;
+
+                        error_log( "Fee Discount: {$fee_discount}" );
+                    }
+                }
+            }
+        }
+
+        error_log( "Total Discount for {$discount}: {$total_discount}" );
+
+        // Display discount
+        $type          = edd_get_discount_type( $discount_id );
+        $rate_display  = edd_format_discount_rate( $type, edd_get_discount_amount( $discount_id ) );
+
+        $discount_html  = "<span class=\"edd_discount\">\n";
+        $discount_html .= "<span class=\"edd_discount_total\">{$discount}&nbsp;&ndash;&nbsp;" . edd_currency_filter( edd_format_amount( $total_discount ) ) . "</span>\n";
+        $discount_html .= "<span class=\"edd_discount_rate\">($rate_display)</span>\n";
+        $discount_html .= sprintf(
+            '<a href="%s" data-code="%s" class="edd_discount_remove"><span class="screen-reader-text">%s</span></a>',
+            esc_url( $remove_url ),
+            esc_attr( $discount ),
+            esc_attr__( 'Remove discount', 'easy-digital-downloads' )
+        );
+        $discount_html .= "</span>\n";
+
+        $updated_html .= apply_filters( 'edd_get_cart_discount_html', $discount_html, $discount, $rate, $remove_url );
+    }
+
+    error_log( 'Updated Discounts HTML: ' . $updated_html );
+    return $updated_html;
+}, 10, 4 );
+
+
 
 
 
