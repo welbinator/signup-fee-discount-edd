@@ -25,23 +25,6 @@ define( 'SIGNUP_FEE_DISCOUNT_EDD_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'SIGNUP_FEE_DISCOUNT_EDD_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 define( 'SIGNUP_FEE_DISCOUNT_EDD_TEXT_DOMAIN', 'signup-fee-discount-edd' );
 
-/**
- * Autoloader function.
- *
- * @param string $class_name The class name to load.
- */
-function autoload( $class_name ) {
-    if ( strpos( $class_name, __NAMESPACE__ ) === 0 ) {
-        $relative_class = str_replace( __NAMESPACE__ . '\\', '', $class_name );
-        $file = plugin_dir_path( __FILE__ ) . 'includes/' . str_replace( '\\', '/', $relative_class ) . '.php';
-
-        if ( file_exists( $file ) ) {
-            include $file;
-        }
-    }
-}
-
-spl_autoload_register( __NAMESPACE__ . '\\autoload' );
 
 /**
  * Plugin activation hook.
@@ -62,18 +45,9 @@ register_deactivation_hook( __FILE__, __NAMESPACE__ . '\\deactivate' );
 function init() {
     load_plugin_textdomain( SIGNUP_FEE_DISCOUNT_EDD_TEXT_DOMAIN, false, dirname( plugin_basename( __FILE__ ) ) . '/languages' );
 
-    // Load admin functionalities.
-    if ( is_admin() ) {
-        if ( file_exists( SIGNUP_FEE_DISCOUNT_EDD_PLUGIN_DIR . 'includes/admin/admin.php' ) ) {
-            require_once SIGNUP_FEE_DISCOUNT_EDD_PLUGIN_DIR . 'includes/admin/admin.php';
-            if ( function_exists( 'SignupFeeDiscountEdd\\Admin\\setup' ) ) {
-                Admin\setup();
-            }
-        }
-
         add_action( 'edd_add_discount_form_after_use_once', __NAMESPACE__ . '\\render_signup_fee_toggle', 10, 1 );
         add_action( 'edd_edit_discount_form_before_status', __NAMESPACE__ . '\\render_signup_fee_toggle', 10, 1 );
-    }
+    
 }
 
 /**
