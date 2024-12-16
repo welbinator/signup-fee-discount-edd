@@ -1,15 +1,17 @@
 <?php
-namespace SignupFeeDiscountEdd;
-
 /**
  * Plugin Name: Signup Fee Discount for EDD
  * Description: Adds an option in the EDD discount edit screen to apply a discount to the signup fee of a recurring payment.
  * Version: 1.0.0
  * Author: James Welbes
- * Author URI: https://apexbranding.design
+ * Author URI: https://prototypewp.com
  * Text Domain: signup-fee-discount-edd
  * Domain Path: /languages
+ * License: GPL-2.0-or-later
+ * License URI: https://www.gnu.org/licenses/gpl-2.0.html
  */
+
+ namespace SignupFeeDiscountEdd;
 
 // Prevent direct access.
 if ( ! defined( 'ABSPATH' ) ) {
