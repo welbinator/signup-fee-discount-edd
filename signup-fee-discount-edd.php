@@ -196,7 +196,7 @@ add_filter( 'edd_get_cart_discounted_amount', __NAMESPACE__ . '\\apply_signup_fe
  */
 add_filter( 'edd_get_cart_discounts_html', function( $html, $discounts, $rate, $remove_url ) {
     error_log( 'edd_get_cart_discounts_html: Filter triggered.' );
-    $updated_html = _n( 'Discount', 'Discounts', count( $discounts ), 'easy-digital-downloads' ) . ':&nbsp;';
+    $updated_html = _n( 'Discount', 'Discounts', count( $discounts ), 'signup-fee-discount-edd' ) . ':&nbsp;';
 
     foreach ( $discounts as $discount ) {
         $discount_id     = edd_get_discount_id_by_code( $discount );
@@ -256,7 +256,7 @@ add_filter( 'edd_get_cart_discounts_html', function( $html, $discounts, $rate, $
             '<a href="%s" data-code="%s" class="edd_discount_remove"><span class="screen-reader-text">%s</span></a>',
             esc_url( $remove_url ),
             esc_attr( $discount ),
-            esc_attr__( 'Remove discount', 'easy-digital-downloads' )
+            esc_attr__( 'Remove discount', 'signup-fee-discount-edd' )
         );
         $discount_html .= "</span>\n";
 
