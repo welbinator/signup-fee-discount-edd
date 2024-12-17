@@ -243,6 +243,69 @@ add_filter( 'edd_get_cart_discounts_html', function( $html, $discounts, $rate, $
     return $updated_html;
 }, 10, 4 );
 
+/**
+ * Save the signup fee discount as order meta during checkout.
+ *
+ * @param int   $payment_id Payment ID.
+ * @param array $payment_data Payment data.
+ */
+function save_signup_fee_discount_meta( $payment_id, $payment_data ) {
+    $signup_fee_discount = 0;
+
+    $cart_items = edd_get_cart_contents();
+    $discounts  = edd_get_cart_discounts();
+
+    if ( ! empty( $discounts ) && ! empty( $cart_items ) ) {
+        foreach ( $discounts as $discount_code ) {
+            $discount_id = edd_get_discount_id_by_code( $discount_code );
+
+            if ( ! $discount_id ) {
+                continue;
+            }
+
+            $apply_to_signup_fee = get_post_meta( $discount_id, '_apply_to_signup_fee', true );
+            if ( '1' !== $apply_to_signup_fee ) {
+                continue;
+            }
+
+            foreach ( $cart_items as $item ) {
+                if ( isset( $item['options']['recurring']['signup_fee'] ) ) {
+                    $signup_fee = floatval( $item['options']['recurring']['signup_fee'] );
+
+                    $discount = edd_get_discount_type( $discount_id ) === 'percent'
+                        ? $signup_fee * ( edd_get_discount_amount( $discount_id ) / 100 )
+                        : min( edd_get_discount_amount( $discount_id ), $signup_fee );
+
+                    $signup_fee_discount += $discount;
+                }
+            }
+        }
+    }
+
+    // Store the total signup fee discount as meta.
+    update_post_meta( $payment_id, '_signup_fee_discount', $signup_fee_discount );
+}
+add_action( 'edd_complete_purchase', __NAMESPACE__ . '\\save_signup_fee_discount_meta', 10, 2 );
+
+/**
+ * Adjust the order total on the receipt to account for signup fee discounts.
+ *
+ * @param float $total    The original order total.
+ * @param int   $order_id The order ID.
+ * @return float Adjusted total.
+ */
+function adjust_receipt_total( $total, $order_id ) {
+    $signup_fee_discount = get_post_meta( $order_id, '_signup_fee_discount', true );
+
+    if ( ! empty( $signup_fee_discount ) ) {
+        $adjusted_total = $total - floatval( $signup_fee_discount );
+        return max( 0, $adjusted_total ); // Prevent negative totals.
+    }
+
+    return $total;
+}
+add_filter( 'edd_payment_amount', __NAMESPACE__ . '\\adjust_receipt_total', 10, 2 );
+
 
 
 
